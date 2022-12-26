@@ -55,6 +55,12 @@ app.post("/api/shorturl", async (req, res) => {
   });
 });
 
+app.get("/api/shorturl/:short", async (req, res) => {
+  const { short } = req.params;
+  const alredyCreatedLink = await LinkModel.findOne({ short_url: short });
+  res.redirect(alredyCreatedLink.original_url);
+});
+
 app.listen(port, function () {
   console.log(`Listening on port ${port}`);
 });
