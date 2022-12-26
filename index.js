@@ -5,6 +5,7 @@ const app = express();
 const bodyParser = require("body-parser");
 const Loaders = require("./database/mongodb");
 const LinkModel = require("./database/model");
+const dns = require("node:dns");
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
@@ -26,18 +27,39 @@ app.get("/api/hello", function (req, res) {
   res.json({ greeting: "hello API" });
 });
 
-app.post("/api/shorturl", async (req, res) => {
-  function isValidUrl(string) {
-    try {
-      new URL(string);
-      return true;
-    } catch (err) {
-      return false;
-    }
-  }
-  const { url } = req.body;
-  if (!isValidUrl(url)) return res.json({ error: "invalid url" });
+const isValidUrl = (req, res, next) => {
+  console.log(req.body);
+  console.log(req.params);
+  console.log(req.query);
 
+  try {
+    const validUrl = new URL(req.body.url);
+    if (validUrl.origin === "null") {
+      console.log("null URL");
+      console.log({ error: "invalid url" });
+      return res.json({ error: "invalid url" });
+    } else {
+      console.log("try dns.lookup()");
+      dns.lookup(validUrl.hostname, (err, addr, family) => {
+        if (err || !addr) {
+          console.log(`failed dns.lookup() on URL: ${req.body.url}`);
+          console.log({ error: "invalid hostname" });
+          return res.json({ error: "invalid hostname" });
+        }
+        console.log(`no dns.lookup() errors, ${req.body.url} must be valid`);
+        next();
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    console.log("caught error");
+    console.log({ error: "invalid url" });
+    return res.json({ error: "invalid url" });
+  }
+};
+
+app.post("/api/shorturl", isValidUrl, async (req, res) => {
+  const { url } = req.body;
   const alredyCreatedLink = await LinkModel.findOne({ original_url: url });
   if (alredyCreatedLink) {
     return res.json({
