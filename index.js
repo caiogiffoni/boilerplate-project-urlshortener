@@ -43,8 +43,8 @@ const isValidUrl = (req, res, next) => {
       dns.lookup(validUrl.hostname, (err, addr, family) => {
         if (err || !addr) {
           console.log(`failed dns.lookup() on URL: ${req.body.url}`);
-          console.log({ error: "invalid hostname" });
-          return res.json({ error: "invalid hostname" });
+          console.log({ error: "invalid url" });
+          return res.json({ error: "invalid url" });
         }
         console.log(`no dns.lookup() errors, ${req.body.url} must be valid`);
         next();
