@@ -27,12 +27,29 @@ app.get("/api/hello", function (req, res) {
 });
 
 app.post("/api/shorturl", async (req, res) => {
+  function isValidUrl(string) {
+    try {
+      new URL(string);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
   const { url } = req.body;
+  if (!isValidUrl(url)) return res.json({ error: "invalid url" });
+
+  const alredyCreatedLink = await LinkModel.findOne({ original_url: url });
+  if (alredyCreatedLink) {
+    return res.json({
+      original_url: url,
+      short_url: alredyCreatedLink.short_url,
+    });
+  }
   const linkTable = await LinkModel.create({
     original_url: url,
     short_url: (await LinkModel.find()).length + 1,
   });
-  res.json({
+  return res.json({
     original_url: url,
     short_url: linkTable.short_url,
   });
